@@ -59,6 +59,24 @@ func resourceAwsCodeBuildProject() *schema.Resource {
 				},
 				Set: resourceAwsCodeBuildProjectArtifactsHash,
 			},
+			"cache": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validateAwsCodeBuildCacheType,
+						},
+						"location": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -199,6 +217,10 @@ func resourceAwsCodeBuildProjectCreate(d *schema.ResourceData, meta interface{})
 		Artifacts:   &projectArtifacts,
 	}
 
+	if v, ok := d.GetOk("cache"); ok {
+		params.Cache = expandProjectCache(v.([]interface{}))
+	}
+
 	if v, ok := d.GetOk("description"); ok {
 		params.Description = aws.String(v.(string))
 	}
@@ -275,6 +297,19 @@ func expandProjectArtifacts(d *schema.ResourceData) codebuild.ProjectArtifacts {
 	}
 
 	return projectArtifacts
+}
+
+func expandProjectCache(s []interface{}) *codebuild.ProjectCache {
+	var projectCache *codebuild.ProjectCache
+
+	data := s[0].(map[string]interface{})
+
+	projectCache = &codebuild.ProjectCache{
+		Type:     aws.String(data["type"].(string)),
+		Location: aws.String(data["location"].(string)),
+	}
+
+	return projectCache
 }
 
 func expandProjectEnvironment(d *schema.ResourceData) *codebuild.ProjectEnvironment {
@@ -384,6 +419,10 @@ func resourceAwsCodeBuildProjectRead(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 
+	if err := d.Set("cache", flattenAwsCodebuildProjectCache(project.Cache)); err != nil {
+		return err
+	}
+
 	if err := d.Set("environment", schema.NewSet(resourceAwsCodeBuildProjectEnvironmentHash, flattenAwsCodebuildProjectEnvironment(project.Environment))); err != nil {
 		return err
 	}
@@ -425,6 +464,16 @@ func resourceAwsCodeBuildProjectUpdate(d *schema.ResourceData, meta interface{})
 	if d.HasChange("artifacts") {
 		projectArtifacts := expandProjectArtifacts(d)
 		params.Artifacts = &projectArtifacts
+	}
+
+	if d.HasChange("cache") {
+		if v, ok := d.GetOk("cache"); ok {
+			params.Cache = expandProjectCache(v.([]interface{}))
+		} else {
+			params.Cache = &codebuild.ProjectCache{
+				Type: aws.String("NO_CACHE"),
+			}
+		}
 	}
 
 	if d.HasChange("description") {
@@ -507,6 +556,24 @@ func flattenAwsCodebuildProjectArtifacts(artifacts *codebuild.ProjectArtifacts) 
 	artifactSet.Add(values)
 
 	return &artifactSet
+}
+
+func flattenAwsCodebuildProjectCache(cache *codebuild.ProjectCache) []interface{} {
+	values := map[string]interface{}{}
+
+	if cache.Type != nil {
+		if *cache.Type == "NO_CACHE" {
+			values["type"] = ""
+		} else {
+			values["type"] = *cache.Type
+		}
+	}
+
+	if cache.Location != nil {
+		values["location"] = *cache.Location
+	}
+
+	return []interface{}{values}
 }
 
 func flattenAwsCodebuildProjectEnvironment(environment *codebuild.ProjectEnvironment) []interface{} {

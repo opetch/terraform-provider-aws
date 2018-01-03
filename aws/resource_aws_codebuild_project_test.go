@@ -324,6 +324,11 @@ func testAccCheckAWSCodeBuildProjectDestroy(s *terraform.State) error {
 
 func testAccAWSCodeBuildProjectConfig_basic(rName string) string {
 	return fmt.Sprintf(`
+resource "aws_s3_bucket" "foo" {
+  bucket = "tf-test-codebuild-%s"
+  acl    = "private"
+}
+
 resource "aws_iam_role" "codebuild_role" {
   name = "codebuild-role-%s"
   assume_role_policy = <<EOF
@@ -382,6 +387,11 @@ resource "aws_codebuild_project" "foo" {
     type = "NO_ARTIFACTS"
   }
 
+  cache {
+    type     = "S3"
+    location = "${aws_s3_bucket.foo.bucket}"
+  }
+
   environment {
     compute_type = "BUILD_GENERAL1_SMALL"
     image        = "2"
@@ -402,11 +412,16 @@ resource "aws_codebuild_project" "foo" {
     "Environment" = "Test"
   }
 }
-`, rName, rName, rName, rName)
+`, rName, rName, rName, rName, rName)
 }
 
 func testAccAWSCodeBuildProjectConfig_basicUpdated(rName string) string {
 	return fmt.Sprintf(`
+resource "aws_s3_bucket" "foo" {
+  bucket = "tf-test-codebuild-%s"
+  acl    = "private"
+}
+
 resource "aws_iam_role" "codebuild_role" {
   name = "codebuild-role-%s"
   assume_role_policy = <<EOF
@@ -465,6 +480,11 @@ resource "aws_codebuild_project" "foo" {
     type = "NO_ARTIFACTS"
   }
 
+  cache {
+    type     = "S3"
+    location = "${aws_s3_bucket.foo.bucket}"
+  }
+
   environment {
     compute_type = "BUILD_GENERAL1_SMALL"
     image        = "2"
@@ -485,7 +505,7 @@ resource "aws_codebuild_project" "foo" {
     "Environment" = "Test"
   }
 }
-`, rName, rName, rName, rName)
+`, rName, rName, rName, rName, rName)
 }
 
 func testAccAWSCodeBuildProjectConfig_default_timeout(rName string) string {
