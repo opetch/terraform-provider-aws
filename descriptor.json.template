@@ -1,0 +1,21 @@
+{
+    "package": {
+        "name": "terraform-provider-aws",
+        "repo": "binaries",
+        "subject": "opetch",
+        "vcs_url": "https://github.com/opetch/terraform-provider-aws.git",
+        "licenses": ["MIT"],
+        "public_download_numbers": false,
+        "public_stats": false
+    },
+
+    "version": {
+        "name": "VERSION"
+    },
+
+    "files":
+        [
+        {"includePattern": "target/terraform-provider-aws", "uploadPattern": "terraform-providers/terraform-provider-aws_VERSION"}
+        ],
+    "publish": true
+}

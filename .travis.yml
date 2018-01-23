@@ -3,24 +3,30 @@ sudo: false
 language: go
 go:
 - 1.9.1
-
 install:
-# This script is used by the Travis build to install a cookie for
-# go.googlesource.com so rate limits are higher when using `go get` to fetch
-# packages that live there.
-# See: https://github.com/golang/go/issues/12933
 - bash scripts/gogetcookie.sh
 - go get github.com/kardianos/govendor
-
 script:
 - make test
 - make vendor-status
 - make vet
-
+- make build
 branches:
   only:
   - master
+  - bleeding_edge
 matrix:
   fast_finish: true
   allow_failures:
   - go: tip
+before_deploy:
+  - mkdir target
+  - cp $GOPATH/bin/terraform-provider-aws target
+  - sed -e "s/VERSION/$(git describe --tags)/g" descriptor.json.template > descriptor.json
+deploy:
+  on: bleeding_edge
+  provider: bintray
+  file: descriptor.json
+  user: opetch
+  key:
+    secure: YnJVdp6/fFRuwt1p/YrfDoWto2FMOeOdZtr4r2wIgyNO2G9L0xnvN+MyVJ//2WmY+jjqNeGBPrae81Glq7qyab9jOKKtWRC8mecK85m+dM/OZF4KwZa0dqAGYuAlYztxW/EnCisI3aZBTMs/w1U/J6HcSd/ptSRCWNU5QZeE8tER20NslsAcgg6QXvnbAZeJ4ksA7Ul4ca0MhFDQc+1zs7Ymrd244bHwWwhrzWR+ighv2O8JSCByybIZuCF/D1vNCTospA9ZJPWb40fRimECimm2GFrioWZPnpkJWnfkoATQEnOK8SS6uwzgkUagsrVoJbDXlsjF7dzL36qyPkIs5noSNkvzVsVHEbAU4W3ym/iZoSS01iCIhhIui08orI7LktDwIQtLpWzGMfmdRnTbOZtEi23zrgRyNdVMwUzqhvXEgIDiXu9pZPZMcvKGmCuDOvqPSmrumWuQD5uMxr+bxtNWYVPDM5m3lpEPYRtTdAVpOfxtP4mx2+/uTSzIHB/kMw3+tNmSQ+77NfP3EA1KaAEEO3KO3l1I4GaUNYg0pI5y3ieKpC79ENtmVJ+uLImCGL6j2Zla8s4WU5W/6wa6f1rBillweHapvRbXOt/3k7UaM5N7KvXuQkbjW+9jA0ME2r4lXVfKCETvEmIA30GVlHnBVPylMexiGeDaiWIQeNs=
