@@ -69,6 +69,12 @@ func dataSourceCloudHsm2Cluster() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Set:      schema.HashString,
 			},
+			"ip_addresses": {
+				Type:     schema.TypeSet,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Set:      schema.HashString,
+			},
 		},
 	}
 }
@@ -121,6 +127,15 @@ func dataSourceCloudHsm2ClusterRead(d *schema.ResourceData, meta interface{}) er
 		if err := d.Set("subnet_ids", subnets); err != nil {
 			return fmt.Errorf("[DEBUG] Error saving Subnet IDs to state for CloudHSMv2 Cluster (%s): %s", d.Id(), err)
 		}
+
+		var ips []string
+		for _, hsm := range cluster.Hsms {
+			ips = append(ips, *hsm.EniIp)
+		}
+		if err := d.Set("ip_addresses", ips); err != nil {
+			return fmt.Errorf("[DEBUG] Error saving IP Addresses state for CloudHSMv2 Cluster (%s): %s", d.Id(), err)
+		}
+
 	} else {
 		return fmt.Errorf("cluster with id %s not found", clusterId)
 	}
